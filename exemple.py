@@ -1,5 +1,6 @@
 #!/usr/bin/python
-# coding=utf8
+# coding=utf87
+#modif Killyan
 
 from PIL import Image
 
