@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# coding=utf8
 
 from PIL import Image
 
