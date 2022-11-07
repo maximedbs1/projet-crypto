@@ -56,23 +56,25 @@ message_defaut = "Hello world"
 choix_defaut = 1
 
 # programme de demonstration
-saisie = input("Entrez l'operation 1) cacher 2) retrouver [%d]"%choix_defaut)
-choix = saisie or choix_defaut
+def demo():
+	saisie = input("Entrez l'operation 1) cacher 2) retrouver [%d]"%choix_defaut)
+	choix = saisie or choix_defaut
 
-if choix == 1:
-	saisie = input("Entrez le nom du fichier [%s]"%nom_defaut)
-	nom_fichier = saisie or nom_defaut
-	saisie = input("Entrez le message [%s]"%message_defaut)
-	message_a_traiter = saisie or message_defaut
-	print("Longueur message : ",len(message_a_traiter))
-	mon_image = Image.open(nom_fichier)
-	cacher(mon_image, message_a_traiter)
-	mon_image.save("stegano_"+nom_fichier)
-else :
-	saisie = input("Entrez le nom du fichier [%s]"%nom_defaut)
-	nom_fichier = saisie or nom_defaut
-	saisie = input("Entrez la taille du message ")
-	message_a_traiter = int(saisie)
-	mon_image = Image.open(nom_fichier)
-	message_retrouve = recuperer(mon_image, message_a_traiter)
-	print(message_retrouve)
+	if choix == 1:
+		saisie = input("Entrez le nom du fichier [%s]"%nom_defaut)
+		nom_fichier = saisie or nom_defaut
+		saisie = input("Entrez le message [%s]"%message_defaut)
+		message_a_traiter = saisie or message_defaut
+		print("Longueur message : ",len(message_a_traiter))
+		mon_image = Image.open(nom_fichier)
+		cacher(mon_image, message_a_traiter)
+		mon_image.save("stegano_"+nom_fichier)
+	else :
+		saisie = input("Entrez le nom du fichier [%s]"%nom_defaut)
+		nom_fichier = saisie or nom_defaut
+		saisie = input("Entrez la taille du message ")
+		message_a_traiter = int(saisie)
+		mon_image = Image.open(nom_fichier)
+		message_retrouve = recuperer(mon_image, message_a_traiter)
+		print(message_retrouve)
+	

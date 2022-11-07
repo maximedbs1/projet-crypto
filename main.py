@@ -6,6 +6,7 @@ import google.oauth2.id_token
 from flask import Flask, render_template, request, redirect, url_for
 from google.auth.transport import requests
 
+import stegano as st
 from PIL import Image 
 from PIL import ImageFont
 from PIL import ImageDraw
@@ -45,11 +46,15 @@ def ajoutTxtVisible(nom, prenom, intitule, img1):
     img2 = ajoutNomPrenom(nom, prenom, img1)
     img = ajoutIntitule(intitule, img2)
 
-    img.save('img2.png')
     #font = ImageFont.truetype("times-ro.ttf", 34)
     #img = Image.open('image_test.png')
     #draw = ImageDraw.Draw(img)
     #draw.text((1000, 200),txt,(0,0,0))
+
+def ajoutTxtInvisible(nom, prenom, intitule, img):
+    txt = nom + prenom + intitule
+    st.cacher(img, txt)
+
 
     
 
@@ -62,8 +67,10 @@ def ajout_texte():
 
 
     ajoutTxtVisible(nom, prenom, intitule, img)
-    return redirect('/formulaire')
+    ajoutTxtInvisible(nom, prenom, intitule, img)
+    img.save('img2.png')
 
+    return redirect('/formulaire')
 
 
 
