@@ -27,19 +27,41 @@ def root():
 def formulaire():
     return render_template('formulaire.html')
 
-
-
-def ajoutTxtVisible(txt):
-    #font = ImageFont.truetype("times-ro.ttf", 34)
-    img = Image.open('image_test.png')
+font = ImageFont.truetype("arial.ttf", 50)
+def ajoutNomPrenom(nom, prenom, img):
+    txt = nom + " " + prenom
     draw = ImageDraw.Draw(img)
-    draw.text((1000, 200),txt,(0,0,0))
+    draw.text((700, 300),txt,(0,0,0), font=font)
+    return img
+
+def ajoutIntitule(intitule, img):
+    draw = ImageDraw.Draw(img)
+    draw.text((700, 400),intitule,(0,0,0), font=font)
+    return img
+
+
+def ajoutTxtVisible(nom, prenom, intitule, img1):
+
+    img2 = ajoutNomPrenom(nom, prenom, img1)
+    img = ajoutIntitule(intitule, img2)
 
     img.save('img2.png')
+    #font = ImageFont.truetype("times-ro.ttf", 34)
+    #img = Image.open('image_test.png')
+    #draw = ImageDraw.Draw(img)
+    #draw.text((1000, 200),txt,(0,0,0))
+
+    
 
 @app.route('/ajout_texte', methods=['POST'])
 def ajout_texte():
-    ajoutTxtVisible('BONJOUR BONJOUR BONJOUR')
+    nom = request.form['nom']
+    prenom = request.form['prenom']
+    intitule = request.form['intitule']
+    img = Image.open('image_test.png')
+
+
+    ajoutTxtVisible(nom, prenom, intitule, img)
     return redirect('/formulaire')
 
 
