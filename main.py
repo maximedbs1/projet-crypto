@@ -10,6 +10,7 @@ import stegano as st
 from PIL import Image 
 from PIL import ImageFont
 from PIL import ImageDraw
+import pyotp
 
 # credential_path = "h:\Desktop\Cloud Programming\Labs\env/assignment01-343611-d88e3f82d83b.json"
 # os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credential_path
@@ -27,6 +28,10 @@ def root():
 @app.route('/formulaire')
 def formulaire():
     return render_template('formulaire.html')
+
+
+
+
 
 font = ImageFont.truetype("arial.ttf", 50)
 def ajoutNomPrenom(nom, prenom, img):
@@ -56,9 +61,13 @@ def ajoutTxtInvisible(nom, prenom, intitule, img):
     st.cacher(img, txt)
 
 
+def creerPass():
+    epoch = datetime.datetime.now().timestamp()
     
 
-@app.route('/ajout_texte', methods=['POST'])
+
+
+@app.route('/creation_diplome', methods=['POST'])
 def ajout_texte():
     nom = request.form['nom']
     prenom = request.form['prenom']
@@ -71,6 +80,42 @@ def ajout_texte():
     img.save('img2.png')
 
     return redirect('/formulaire')
+
+
+
+
+@app.route('/verif_page')
+def verifPage():
+    return render_template('verifPage.html')
+
+
+
+@app.route('/verif_diplome', methods=['POST'])
+def verifDiplome():
+    img1 = request.files['img']
+    img = Image.open(img1)
+    nom = request.form['nom']
+    prenom = request.form['prenom']
+    intitule = request.form['intitule']
+    txt = str(nom) + str(prenom) + str(intitule)
+    txt_len = len(str(txt))
+    msg = st.recuperer(img, txt_len)
+
+    if msg == txt:
+        ind = 1
+    else:
+        ind = 0
+    return redirect(url_for('rapport', ind=ind))
+
+
+@app.route('/rapport/<int:ind>')
+def rapport(ind):
+    if ind == 1:
+        rapport = "Diplôme valide"
+    else:
+        rapport = "Diplôme invalide"
+    return render_template('rapport.html', rapport = rapport)
+
 
 
 
