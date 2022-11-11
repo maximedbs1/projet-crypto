@@ -63,6 +63,10 @@ def ajoutTxtInvisible(nom, prenom, intitule, img):
 
 def creerPass():
     epoch = datetime.datetime.now().timestamp()
+    #secret = pyotp.random_base32()
+    secret = 'base32secret3232'
+    totp = pyotp.TOTP(secret)
+    return totp
     
 
 
@@ -73,11 +77,14 @@ def ajout_texte():
     prenom = request.form['prenom']
     intitule = request.form['intitule']
     img = Image.open('image_test.png')
+    otp = request.form['otp']
 
+    totp = creerPass()
 
-    ajoutTxtVisible(nom, prenom, intitule, img)
-    ajoutTxtInvisible(nom, prenom, intitule, img)
-    img.save('img2.png')
+    if totp.verify(otp):
+        ajoutTxtVisible(nom, prenom, intitule, img)
+        ajoutTxtInvisible(nom, prenom, intitule, img)
+        img.save('img2.png')
 
     return redirect('/formulaire')
 
