@@ -1,4 +1,4 @@
-# import os
+import os
 import random
 import datetime
 from google.cloud import datastore, storage
@@ -62,13 +62,14 @@ def ajoutTxtInvisible(nom, prenom, intitule, img):
 
 
 def creerPass():
-    epoch = datetime.datetime.now().timestamp()
     #secret = pyotp.random_base32()
     secret = 'base32secret3232'
     totp = pyotp.TOTP(secret)
     return totp
     
 
+def getTimestamp(img):
+    os.system("openssl ts -query -data " + img.filename + " -no_nonce -sha512 -cert -out tmstp.tsq")
 
 
 @app.route('/creation_diplome', methods=['POST'])
@@ -80,7 +81,7 @@ def ajout_texte():
     otp = request.form['otp']
 
     totp = creerPass()
-
+    getTimestamp(img)
     if totp.verify(otp):
         ajoutTxtVisible(nom, prenom, intitule, img)
         ajoutTxtInvisible(nom, prenom, intitule, img)
