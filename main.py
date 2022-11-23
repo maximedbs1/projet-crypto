@@ -81,8 +81,9 @@ def ajout_texte():
     otp = request.form['otp']
 
     totp = creerPass()
-    getTimestamp(img)
+    
     if totp.verify(otp):
+        getTimestamp(img)
         ajoutTxtVisible(nom, prenom, intitule, img)
         ajoutTxtInvisible(nom, prenom, intitule, img)
         img.save('img2.png')
