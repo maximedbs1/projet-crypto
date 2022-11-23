@@ -19,6 +19,8 @@ app = Flask(__name__)
 #datastore_client = datastore.Client()
 #firebase_request_adapter = requests.Request()
 
+auth = False
+
 
 bdd_tsr = {}
 bdd_tsq = {}
@@ -43,11 +45,29 @@ for tsr_file in lst_tsr:
 
 @app.route('/')
 def root():
-    return render_template('index.html')
+    if auth:
+        return render_template('index.html')
+    else:
+        return render_template('authentication.html')
+
+@app.route('/authentication', methods=['POST'])
+def authentication():
+    nom = request.form['nom']
+    mdp = request.form['mdp']
+    global auth
+    if nom == 'admin' and mdp == '1234':     
+        auth = True
+    else:
+        auth = False
+    return redirect('/')
+
 
 @app.route('/formulaire')
 def formulaire():
-    return render_template('formulaire.html', creation="")
+    if auth:
+        return render_template('formulaire.html', creation="")
+    else:
+        return redirect('/')
 
 
 
@@ -111,30 +131,38 @@ def getTimestamp(img, nom, prenom, intitule):
 
 
 @app.route('/creation_diplome', methods=['POST'])
-def ajout_texte():
-    nom = request.form['nom']
-    prenom = request.form['prenom']
-    intitule = request.form['intitule']
-    otp = request.form['otp']
-    img = Image.open('image_test.png')
+def creation_diplome():
+    if auth:
+        nom = request.form['nom']
+        prenom = request.form['prenom']
+        intitule = request.form['intitule']
+        otp = request.form['otp']
+        img = Image.open('image_test.png')
 
-    totp = creerPass()
+        totp = creerPass()
 
-    if totp.verify(otp):
-        timestamp=getTimestamp(img, nom, prenom, intitule)
-        ajoutTxtVisible(nom, prenom, intitule, img)
-        ajoutTxtInvisible(nom, prenom, intitule, timestamp, img)
-        img.save('img2.png')
-        return render_template('formulaire.html', creation="success")
+        if totp.verify(otp):
+            timestamp=getTimestamp(img, nom, prenom, intitule)
+            ajoutTxtVisible(nom, prenom, intitule, img)
+            ajoutTxtInvisible(nom, prenom, intitule, timestamp, img)
+            img.save('img2.png')
+            return render_template('formulaire.html', creation="success")
 
-    return redirect('/formulaire')
+        else:
+            return render_template('formulaire.html', creation="OTP incorrect")
+    
+    else:
+        return redirect('/')
 
 
 
 
 @app.route('/verif_page')
 def verifPage():
-    return render_template('verifPage.html')
+    if auth:
+        return render_template('verifPage.html')
+    else:
+        return redirect('/')
 
 
 
@@ -147,38 +175,46 @@ def verifTimestamp(encoded):
 
 @app.route('/verif_diplome', methods=['POST'])
 def verifDiplome():
-    img1 = request.files['img']
-    img = Image.open(img1)
-    nom = request.form['nom']
-    prenom = request.form['prenom']
-    intitule = request.form['intitule']
-    txt = str(nom) + str(prenom) + str(intitule)
-    while (len(txt)<64):
-        txt = txt + "0"
-    longueur = 64 + 7331
-    msg = st.recuperer(img, longueur)
-    bloc1 = msg[:64]
-    bloc2 = msg[64:]
-    #print("bloc1: " + bloc1)
-    #print("txt: " + txt)
-    #print("bloc2: " + bloc2)
-    verif=verifTimestamp(bloc2)
+    if auth:
+        img1 = request.files['img']
+        img = Image.open(img1)
+        nom = request.form['nom']
+        prenom = request.form['prenom']
+        intitule = request.form['intitule']
+        txt = str(nom) + str(prenom) + str(intitule)
+        while (len(txt)<64):
+            txt = txt + "0"
+        longueur = 64 + 7331
+        msg = st.recuperer(img, longueur)
+        bloc1 = msg[:64]
+        bloc2 = msg[64:]
+        #print("bloc1: " + bloc1)
+        #print("txt: " + txt)
+        #print("bloc2: " + bloc2)
+        verif=verifTimestamp(bloc2)
 
 
-    if bloc1 == txt and verif == "Verification: OK\n":
-        ind = 1
+        if bloc1 == txt and verif == "Verification: OK\n":
+            ind = 1
+        else:
+            ind = 0
+        return redirect(url_for('rapport', ind=ind))
+
     else:
-        ind = 0
-    return redirect(url_for('rapport', ind=ind))
+        return redirect('/')
 
 
 @app.route('/rapport/<int:ind>')
 def rapport(ind):
-    if ind == 1:
-        rapport = "Diplôme valide"
+    if auth:
+        if ind == 1:
+            rapport = "Diplôme valide"
+        else:
+            rapport = "Diplôme invalide"
+        return render_template('rapport.html', rapport = rapport)
+
     else:
-        rapport = "Diplôme invalide"
-    return render_template('rapport.html', rapport = rapport)
+        return redirect('/')
 
 
 
