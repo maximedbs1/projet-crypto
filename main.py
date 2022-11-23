@@ -122,6 +122,7 @@ def ajout_texte():
     timestamp=getTimestamp(img, nom, prenom, intitule)
     print("longueur: " + str(len(timestamp)))
     if totp.verify(otp):
+        getTimestamp(img)
         ajoutTxtVisible(nom, prenom, intitule, img)
         ajoutTxtInvisible(nom, prenom, intitule, timestamp, img)
         img.save('img2.png')
