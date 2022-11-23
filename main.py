@@ -1,16 +1,16 @@
 import os
 import random
 import datetime
-from google.cloud import datastore, storage
-import google.oauth2.id_token
 from flask import Flask, render_template, request, redirect, url_for
-from google.auth.transport import requests
+
 
 import stegano as st
 from PIL import Image 
 from PIL import ImageFont
 from PIL import ImageDraw
 import pyotp
+import base64
+
 
 # credential_path = "h:\Desktop\Cloud Programming\Labs\env/assignment01-343611-d88e3f82d83b.json"
 # os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credential_path
@@ -20,6 +20,26 @@ app = Flask(__name__)
 #firebase_request_adapter = requests.Request()
 
 
+bdd_tsr = {}
+bdd_tsq = {}
+
+nb_tsq = os.popen("ls -l tsq_files/ | wc -l").read()
+nb_tsr = os.popen("ls -l tsr_files/ | wc -l").read()
+tsr = os.popen("ls tsr_files/").read()
+tsq = os.popen("ls tsq_files/").read()
+lst_tsr = tsr.split("\n")
+lst_tsq = tsq.split("\n")
+lst_tsr = lst_tsr[:len(lst_tsr) -1]
+lst_tsq = lst_tsq[:len(lst_tsq) -1]
+
+for tsr_file in lst_tsr:
+    with open("tsr_files/" + tsr_file, "rb") as timestamp_file:
+        encoded_string = base64.b64encode(timestamp_file.read())
+    final_string = str(encoded_string)
+    bdd_tsr[final_string] = tsr_file
+    bdd_tsq[final_string] = lst_tsq[lst_tsr.index(tsr_file)]
+
+
 
 @app.route('/')
 def root():
@@ -27,22 +47,22 @@ def root():
 
 @app.route('/formulaire')
 def formulaire():
-    return render_template('formulaire.html')
+    return render_template('formulaire.html', creation="")
 
 
 
 
 
-font = ImageFont.truetype("arial.ttf", 50)
+#font = ImageFont.truetype("arial.ttf", 50)
 def ajoutNomPrenom(nom, prenom, img):
     txt = nom + " " + prenom
     draw = ImageDraw.Draw(img)
-    draw.text((700, 300),txt,(0,0,0), font=font)
+    draw.text((700, 300),txt,(0,0,0))
     return img
 
 def ajoutIntitule(intitule, img):
     draw = ImageDraw.Draw(img)
-    draw.text((700, 400),intitule,(0,0,0), font=font)
+    draw.text((700, 400),intitule,(0,0,0))
     return img
 
 
@@ -56,9 +76,12 @@ def ajoutTxtVisible(nom, prenom, intitule, img1):
     #draw = ImageDraw.Draw(img)
     #draw.text((1000, 200),txt,(0,0,0))
 
-def ajoutTxtInvisible(nom, prenom, intitule, img):
+def ajoutTxtInvisible(nom, prenom, intitule, timestamp, img):
     txt = nom + prenom + intitule
-    st.cacher(img, txt)
+    while (len(txt) < 64):
+        txt = txt + "0"
+    bloc =  txt + timestamp 
+    st.cacher(img, bloc)
 
 
 def creerPass():
@@ -68,8 +91,23 @@ def creerPass():
     return totp
     
 
-def getTimestamp(img):
-    os.system("openssl ts -query -data " + img.filename + " -no_nonce -sha512 -cert -out tmstp.tsq")
+def getTimestamp(img, nom, prenom, intitule):
+    txt = nom + prenom + intitule
+    request_file = txt + ".tsq"
+    timestamp_file_name = txt + ".tsr"
+    os.system("openssl ts -query -data " + img.filename + " -no_nonce -sha512 -cert -out " + request_file)
+    os.system("curl -H \"Content-Type: application/timestamp-query\" --data-binary '@" + request_file + "' https://freetsa.org/tsr > " + timestamp_file_name)
+    os.system("mv " + request_file + " tsq_files/")
+    os.system("mv " + timestamp_file_name + " tsr_files/")
+
+    with open("tsr_files/" + timestamp_file_name, "rb") as timestamp_file:
+        encoded_string = base64.b64encode(timestamp_file.read())
+    final_string = str(encoded_string)
+    bdd_tsq[final_string] = request_file
+    bdd_tsr[final_string] = timestamp_file_name
+    #print(final_string)
+    return final_string
+
 
 
 @app.route('/creation_diplome', methods=['POST'])
@@ -77,15 +115,17 @@ def ajout_texte():
     nom = request.form['nom']
     prenom = request.form['prenom']
     intitule = request.form['intitule']
-    img = Image.open('image_test.png')
     otp = request.form['otp']
+    img = Image.open('image_test.png')
 
     totp = creerPass()
-    getTimestamp(img)
+    timestamp=getTimestamp(img, nom, prenom, intitule)
+    print("longueur: " + str(len(timestamp)))
     if totp.verify(otp):
         ajoutTxtVisible(nom, prenom, intitule, img)
-        ajoutTxtInvisible(nom, prenom, intitule, img)
+        ajoutTxtInvisible(nom, prenom, intitule, timestamp, img)
         img.save('img2.png')
+        return render_template('formulaire.html', creation="success")
 
     return redirect('/formulaire')
 
@@ -98,6 +138,13 @@ def verifPage():
 
 
 
+def verifTimestamp(encoded):
+    timestamp_file = bdd_tsr[encoded]
+    request_file = bdd_tsq[encoded]
+    verif = os.popen("openssl ts -verify -in tsr_files/" + timestamp_file + " -queryfile tsq_files/" + request_file + " -CAfile cacert.pem -untrusted tsa.crt").read()
+    return verif 
+
+
 @app.route('/verif_diplome', methods=['POST'])
 def verifDiplome():
     img1 = request.files['img']
@@ -106,10 +153,19 @@ def verifDiplome():
     prenom = request.form['prenom']
     intitule = request.form['intitule']
     txt = str(nom) + str(prenom) + str(intitule)
-    txt_len = len(str(txt))
-    msg = st.recuperer(img, txt_len)
+    while (len(txt)<64):
+        txt = txt + "0"
+    longueur = 64 + 7331
+    msg = st.recuperer(img, longueur)
+    bloc1 = msg[:64]
+    bloc2 = msg[64:]
+    #print("bloc1: " + bloc1)
+    #print("txt: " + txt)
+    #print("bloc2: " + bloc2)
+    verif=verifTimestamp(bloc2)
 
-    if msg == txt:
+
+    if bloc1 == txt and verif == "Verification: OK\n":
         ind = 1
     else:
         ind = 0
@@ -126,25 +182,6 @@ def rapport(ind):
 
 
 
-
-@app.route('/connection')
-def connection():
-    id_token = request.cookies.get("token")
-    error_message = None
-    claims = None
-    user = None
-
-    if id_token:
-        try:
-            #claims = google.oauth2.id_token.verify_firebase_token(id_token, firebase_request_adapter)
-            #user = retrieveUser(claims)
-            if user == None:
-                return render_template('firstConnection.html', message="")
-            else:
-                return redirect('/index')
-        except ValueError as exc:
-            error_message = str(exc)
-    return redirect('/')
 
 
 if __name__ == '__main__':
