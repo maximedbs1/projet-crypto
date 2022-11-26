@@ -7,11 +7,14 @@
 </head>
 
 <body>
-    <h1>Authentication</h1><br>
-    <form action="/authentication" method="post">
-        Nom : <input type="text" name="nom"><br>
-        Mot de passe: <input type="text" name="mdp"><br>
-        <input type="submit" value="submit">
+    <div class="py-5 border-b border-black bg-blue-300">
+        <h1 class="text-4xl font-bold text-center">Authentication</h1>
+    </div>
+    <br><br><br>
+    <form action="/authentication" method="post" class="text-center">
+        Nom : <input class="border border-black rounded-lg" type="text" name="nom"><br><br>
+        Mot de passe: <input class="border border-black rounded-lg" type="password" name="mdp"><br><br>
+        <input class="px-4 py-1 hover:bg-blue-400 rounded-full cursor-pointer bg-blue-300 font-bold drop-shadow-lg" type="submit" value="submit">
     </form>
    
 </body>

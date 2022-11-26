@@ -19,8 +19,7 @@ app = Flask(__name__)
 #datastore_client = datastore.Client()
 #firebase_request_adapter = requests.Request()
 
-auth = False
-
+auth = True
 
 bdd_tsr = {}
 bdd_tsq = {}

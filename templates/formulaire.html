@@ -7,15 +7,18 @@
 </head>
 
 <body>
-    <h1>Formulaire</h1>
-    <a href="/">retour à l'accueil</a><br><br>
-    <form action="/creation_diplome" method="post">
-        Nom : <input type="text" name="nom">
-        Prénom : <input type="text" name="prenom">
-        Intitulé de la certification : <input type="text" name="intitule">
-        Email de l'étudiant : <input type="text" name="mail">
-        OTP : <input type="text" name="otp">
-        <input type="submit" value="submit">
+    <div class="py-5 border-b border-black bg-blue-300">
+        <h1 class="text-4xl font-bold text-center">Formulaire</h1>
+    </div>
+    
+    <a href="/" class="px-1 hover:underline underline-offset-1 font-bold">Retour à l'accueil</a><br><br>
+    <form action="/creation_diplome" method="post" class="text-center"><br><br>
+        Nom : <input class="border border-black rounded-lg" type="text" name="nom"><br><br>
+        Prénom : <input class="border border-black rounded-lg" type="text" name="prenom"><br><br>
+        Intitulé de la certification : <input class="border border-black rounded-lg" type="text" name="intitule"><br><br>
+        Email de l'étudiant : <input class="border border-black rounded-lg" type="text" name="mail"><br><br>
+        OTP : <input class="border border-black rounded-lg" type="text" name="otp"><br><br>
+        <input class="px-4 py-1 hover:bg-blue-400 rounded-full cursor-pointer bg-blue-300 font-bold drop-shadow-lg" type="submit" value="submit">
     </form>
     <br><br>
     {{ creation }}
