@@ -195,8 +195,12 @@ def verifDiplome():
 
         if bloc1 == txt and verif == "Verification: OK\n":
             ind = 1
-        else:
-            ind = 0
+        elif bloc1 != txt and verif != "Verification: OK\n":
+            ind = 2
+        elif bloc1 != txt:
+            ind = 3
+        elif verif != "Verification: OK\n":
+            ind = 4
         return redirect(url_for('rapport', ind=ind))
 
     else:
@@ -205,12 +209,24 @@ def verifDiplome():
 
 @app.route('/rapport/<int:ind>')
 def rapport(ind):
+
+    error1 = "-Le texte caché ne correspond pas avec les informations que vous avez rentrées."
+    error2 = "-La vérification du timestamp a échoué."
+    lst_errors = []
     if auth:
         if ind == 1:
             rapport = "Diplôme valide"
-        else:
-            rapport = "Diplôme invalide"
-        return render_template('rapport.html', rapport = rapport)
+        elif ind == 2:
+            rapport = "Diplôme invalide:"
+            lst_errors.append(error1)
+            lst_errors.append(error2)
+        elif ind == 3:
+            rapport = "Diplôme invalide:"
+            lst_errors.append(error1)
+        elif ind == 4:
+            rapport = "Diplôme invalide:"
+            lst_errors.append(error2)
+        return render_template('rapport.html', rapport = rapport, lst_errors=lst_errors)
 
     else:
         return redirect('/')

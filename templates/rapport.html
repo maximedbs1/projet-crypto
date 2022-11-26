@@ -10,8 +10,10 @@
     <h1>Rapport de vérification</h1>
 
     <a href="/">retour à l'accueil</a><br>
-    {{ rapport }}
-    
+    {{ rapport }}<br>
+    {% for errors in lst_errors %}
+        {{ errors }}<br>
+    {% endfor %}
 </body>
 
 </html>
