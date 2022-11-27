@@ -1,45 +1,22 @@
-import os
-import random
-import datetime
 from flask import Flask, render_template, request, redirect, url_for
-
-
-import stegano as st
 from PIL import Image 
-from PIL import ImageFont
-from PIL import ImageDraw
+
 import pyotp
-import base64
+import os
 
+import timestamp as tmstp
+import ajout_texte as aj_txt
+import stegano as st
+import sign_verify as sv
+import testmail as tm
 
-# credential_path = "h:\Desktop\Cloud Programming\Labs\env/assignment01-343611-d88e3f82d83b.json"
-# os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credential_path
 
 app = Flask(__name__)
-#datastore_client = datastore.Client()
-#firebase_request_adapter = requests.Request()
 
-auth = True
+tmstp.initializeBdd()
 
-bdd_tsr = {}
-bdd_tsq = {}
+auth = False
 
-def initializeBdd():
-    tsr = os.popen("ls timestamp_files/tsr_files/").read()
-    tsq = os.popen("ls timestamp_files/tsq_files/").read()
-    lst_tsr = tsr.split("\n")
-    lst_tsq = tsq.split("\n")
-    lst_tsr = lst_tsr[:len(lst_tsr) -1]
-    lst_tsq = lst_tsq[:len(lst_tsq) -1]
-
-    for tsr_file in lst_tsr:
-        with open("timestamp_files/tsr_files/" + tsr_file, "rb") as timestamp_file:
-            encoded_string = base64.b64encode(timestamp_file.read())
-        final_string = str(encoded_string)
-        bdd_tsr[final_string] = tsr_file
-        bdd_tsq[final_string] = lst_tsq[lst_tsr.index(tsr_file)]
-
-initializeBdd()
 
 @app.route('/')
 def root():
@@ -70,62 +47,10 @@ def formulaire():
 
 
 
-
-#font = ImageFont.truetype("arial.ttf", 50)
-def ajoutNomPrenom(nom, prenom, img):
-    txt = nom + " " + prenom
-    draw = ImageDraw.Draw(img)
-    draw.text((700, 300),txt,(0,0,0))
-    return img
-
-def ajoutIntitule(intitule, img):
-    draw = ImageDraw.Draw(img)
-    draw.text((700, 400),intitule,(0,0,0))
-    return img
-
-
-def ajoutTxtVisible(nom, prenom, intitule, img1):
-
-    img2 = ajoutNomPrenom(nom, prenom, img1)
-    img = ajoutIntitule(intitule, img2)
-
-    #font = ImageFont.truetype("times-ro.ttf", 34)
-    #img = Image.open('image_test.png')
-    #draw = ImageDraw.Draw(img)
-    #draw.text((1000, 200),txt,(0,0,0))
-
-def ajoutTxtInvisible(nom, prenom, intitule, timestamp, img):
-    txt = nom + prenom + intitule
-    while (len(txt) < 64):
-        txt = txt + "0"
-    bloc =  txt + timestamp 
-    st.cacher(img, bloc)
-
-
 def creerPass():
-    #secret = pyotp.random_base32()
-    secret = 'base32secret3232'
+    secret = 'KillyanPovoaMaximeDubus'
     totp = pyotp.TOTP(secret)
     return totp
-    
-
-def getTimestamp(img, nom, prenom, intitule):
-    txt = nom + prenom + intitule
-    request_file = txt + ".tsq"
-    timestamp_file_name = txt + ".tsr"
-    os.system("openssl ts -query -data " + img.filename + " -no_nonce -sha512 -cert -out " + request_file)
-    os.system("curl -H \"Content-Type: application/timestamp-query\" --data-binary '@" + request_file + "' https://freetsa.org/tsr > " + timestamp_file_name)
-    os.system("mv " + request_file + " timestamp_files/tsq_files/")
-    os.system("mv " + timestamp_file_name + " timestamp_files/tsr_files/")
-
-    with open("timestamp_files/tsr_files/" + timestamp_file_name, "rb") as timestamp_file:
-        encoded_string = base64.b64encode(timestamp_file.read())
-    final_string = str(encoded_string)
-    bdd_tsq[final_string] = request_file
-    bdd_tsr[final_string] = timestamp_file_name
-    #print(final_string)
-    return final_string
-
 
 
 @app.route('/creation_diplome', methods=['POST'])
@@ -134,16 +59,20 @@ def creation_diplome():
         nom = request.form['nom']
         prenom = request.form['prenom']
         intitule = request.form['intitule']
+        mail = request.form['mail']
         otp = request.form['otp']
         img = Image.open('image_test.png')
 
         totp = creerPass()
 
         if totp.verify(otp):
-            timestamp=getTimestamp(img, nom, prenom, intitule)
-            ajoutTxtVisible(nom, prenom, intitule, img)
-            ajoutTxtInvisible(nom, prenom, intitule, timestamp, img)
+            timestamp = tmstp.getTimestamp(img, nom, prenom, intitule)
+            aj_txt.ajoutTxt(nom, prenom, intitule, timestamp, img)
+            qrcode = sv.create_qrcode(nom, prenom, intitule)
+            img.paste(qrcode, (1430, 950))
             img.save('img2.png')
+            tm.envoi_mail(mail)
+            os.system("rm -Rf img2.png")
             return render_template('formulaire.html', creation="success")
 
         else:
@@ -153,8 +82,6 @@ def creation_diplome():
         return redirect('/')
 
 
-
-
 @app.route('/verif_page')
 def verifPage():
     if auth:
@@ -162,13 +89,6 @@ def verifPage():
     else:
         return redirect('/')
 
-
-
-def verifTimestamp(encoded):
-    timestamp_file = bdd_tsr[encoded]
-    request_file = bdd_tsq[encoded]
-    verif = os.popen("openssl ts -verify -in timestamp_files/tsr_files/" + timestamp_file + " -queryfile timestamp_files/tsq_files/" + request_file + " -CAfile timestamp_files/cacert.pem -untrusted timestamp_files/tsa.crt").read()
-    return verif 
 
 
 @app.route('/verif_diplome', methods=['POST'])
@@ -186,20 +106,33 @@ def verifDiplome():
         msg = st.recuperer(img, longueur)
         bloc1 = msg[:64]
         bloc2 = msg[64:]
-        #print("bloc1: " + bloc1)
-        #print("txt: " + txt)
-        #print("bloc2: " + bloc2)
-        verif=verifTimestamp(bloc2)
+        
+        verif_tmstp = tmstp.verifTimestamp(bloc2)
+        img.crop((1430, 950, 1600, 1120)).save('extracted_qrcode.png')
+
+        verif_qrcode=sv.verif_qrcode(nom, prenom, intitule)
+        
+        bool1 = bloc1 == txt 
+        bool2 = verif_tmstp == "Verification: OK\n"
+        bool3 = verif_qrcode == "Verified OK\n"
 
 
-        if bloc1 == txt and verif == "Verification: OK\n":
+        if bool1 and bool2 and bool3 :
             ind = 1
-        elif bloc1 != txt and verif != "Verification: OK\n":
+        elif not bool1 and not bool2 and not bool3:
             ind = 2
-        elif bloc1 != txt:
+        elif not bool1 and not bool2:
             ind = 3
-        elif verif != "Verification: OK\n":
+        elif not bool1 and not bool3:
             ind = 4
+        elif not bool3 and not bool2:
+            ind = 5
+        elif not bool1:
+            ind = 6
+        elif not bool2:
+            ind = 7
+        elif not bool3:
+            ind = 8
         return redirect(url_for('rapport', ind=ind))
 
     else:
@@ -211,20 +144,38 @@ def rapport(ind):
 
     error1 = "-Le texte caché ne correspond pas avec les informations que vous avez rentrées."
     error2 = "-La vérification du timestamp a échoué."
+    error3 = "-La vérification de la signature a échoué."
     lst_errors = []
+
     if auth:
         if ind == 1:
             rapport = "Diplôme valide"
         elif ind == 2:
-            rapport = "Diplôme invalide:"
+            rapport = "Diplôme invalide"
             lst_errors.append(error1)
             lst_errors.append(error2)
+            lst_errors.append(error3)
         elif ind == 3:
-            rapport = "Diplôme invalide:"
+            rapport = "Diplôme invalide"
             lst_errors.append(error1)
-        elif ind == 4:
-            rapport = "Diplôme invalide:"
             lst_errors.append(error2)
+        elif ind == 4:
+            rapport = "Diplôme invalide"
+            lst_errors.append(error1)
+            lst_errors.append(error3)
+        elif ind == 5:
+            rapport = "Diplôme invalide"
+            lst_errors.append(error2)
+            lst_errors.append(error3)
+        elif ind == 6:
+            rapport = "Diplôme invalide"
+            lst_errors.append(error1)
+        elif ind == 7:
+            rapport = "Diplôme invalide"
+            lst_errors.append(error2)
+        elif ind == 8:
+            rapport = "Diplôme invalide"
+            lst_errors.append(error3)
         return render_template('rapport.html', rapport = rapport, lst_errors=lst_errors)
 
     else:

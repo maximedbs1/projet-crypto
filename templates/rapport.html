@@ -12,7 +12,10 @@
     </div>
 
     <a href="/" class="px-1 hover:underline underline-offset-1 font-bold">Retour à l'accueil</a><br>
-    {{ rapport }}<br>
+    <br><br>
+    <div class="text-center text-2xl font-bold">
+        {{ rapport }}
+    </div><br>
     {% for errors in lst_errors %}
         {{ errors }}<br>
     {% endfor %}
