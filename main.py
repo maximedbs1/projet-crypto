@@ -73,13 +73,21 @@ def creation_diplome():
             img.save('img2.png')
             tm.envoi_mail(mail)
             os.system("rm -Rf img2.png")
-            return render_template('formulaire.html', creation="success")
+            return redirect(url_for('conf_creation', ind=0))
 
         else:
-            return render_template('formulaire.html', creation="OTP incorrect")
+            return redirect(url_for('conf_creation', ind=1))
     
     else:
         return redirect('/')
+
+@app.route('/conf_creation/<int:ind>')
+def conf_creation(ind):
+    if ind == 0:
+        rapport = "Diplôme créé et envoyé avec succès."
+    else:
+        rapport = "Erreur lors de la création du diplôme. L'OTP fourni est inexact."
+    return render_template('conf_creation.html', rapport=rapport)
 
 
 @app.route('/verif_page')
@@ -176,7 +184,7 @@ def rapport(ind):
         elif ind == 8:
             rapport = "Diplôme invalide"
             lst_errors.append(error3)
-        return render_template('rapport.html', rapport = rapport, lst_errors=lst_errors)
+        return render_template('rapport.html', rapport = rapport, lst_errors=lst_errors, ind=ind)
 
     else:
         return redirect('/')
